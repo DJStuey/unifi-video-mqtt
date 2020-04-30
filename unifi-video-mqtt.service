@@ -7,7 +7,7 @@ User=unifi-video
 Restart=always
 RestartSec=5
 Type=simple
-ExecStart=/usr/local/bin/unifi-video-mqtt.sh
+ExecStart=/usr/local/bin/UnifiVideoMQTT.py
 TimeoutStopSec=20
 
 [Install]
