@@ -1,15 +1,11 @@
-# unifi-video-mqtt
+# unifi-video-mqtt-py
+
+Inspired by (and forked from) https://github.com/mzac/unifi-video-mqtt
 
 # Introduction
-This script can run on your Unifi Video server and push MQTT messages to a broker when motion is detected.
+This script can run on your Unifi Video server and push MQTT messages to an MQTT broker when motion is detected.
 
 This can be useful for systems like Homeassistant that are lacking motion detection integration with Unifi Video.
-
-Currently, the script is only setup for one camera but others can be added easily by modifying the script.
-
-# Unifi Protect
-If you are looking for Unifi protect please see this fork:
-* https://github.com/terafin/unifi-video-mqtt
 
 # Reference
 Unifi Video writes to */var/log/unifi-video/motion.log* and it ouputs logs like this.  This script parses this log:
@@ -18,56 +14,36 @@ Unifi Video writes to */var/log/unifi-video/motion.log* and it ouputs logs like 
 1559209090.983 2019-05-30 19:08:10.983/ACST: INFO   [uv.analytics.motion] [AnalyticsService] [REDACTED|Front Door] MotionEvent type:stop event:17 clock:14396566 in AnalyticsEvtBus-1
 ```
 
-# Todo
-* Re-write in Python as it might be more efficient
+# TODO
+* setup to run as a service/daemon
 
 # Requirements
 * Unifi Video Server
 * MQTT Client
 * MQTT Server
-* Inotify Tools
+* Python 3
+* mqtt-paho python library
 
-# Installation
+# Optional
+* mqtt client tools on UniFi Server
 
-The installation should be done on your server that is running Unifi video
+# KNOWN ISSUES
 
-Debian based install
-```
-apt install -y inotify-tools mosquitto-clients
-cd /tmp
-git clone https://github.com/mzac/unifi-video-mqtt.git
-cd /tmp/unifi-video-mqtt
-cp unifi-video-mqtt.sh /usr/local/bin
-chown unifi-video:unifi-video /usr/local/bin/unifi-video-mqtt.sh
-chmod a+x /usr/local/bin/unifi-video-mqtt.sh
-cp unifi-video-mqtt.service /etc/systemd/system
-systemctl daemon-reload
-systemctl enable unifi-video-mqtt
-```
+There is a bug with the parsing of the log where spaces exist in the camera name. I've mitigated this for my use-case of "Front Porch" in the IF statement at line 48. I'll need to spend more time on this to figure out a better way to split the log rows into a dict/tuple.
+
 
 # IMPORTANT!!!
-Before starting the service, make sure to edit */usr/local/bin/unifi-video-mqtt.sh* with your specific
+Before starting the service, make sure to edit `UnifiVideoMQTT.py` with your specific
 settings:
 
-```
-# MQTT Vars
-MQTT_SERVER="192.168.x.x"
-MQTT_PORT="1883"
-MQTT_TOPIC_BASE="camera/motion"
-
-# MQTT User/Pass Vars, only use if needed
-#MQTT_USER="username"
-#MQTT_PASS="password"
-#MQTT_ID="yourid"  ## To make it work with hassio
-
-# Camera Defs
-CAM1_NAME="camera_name"
-CAM1_ID="F0xxxxxxxxxx"
-```
+MQTT_BASE_TOPIC = 'camera/motion'
+MQTT_BROKER = "192.168.x.x"
+LOGPATH = "/var/log/unifi-video/motion.log"
+MQTT_PORT = 1883
 
 Test it to make sure it works:
 ```
-/usr/local/bin/unifi-video-mqtt.sh
+/usr/local/bin/UnifiVideoMQTT.py
 ```
 
 Create some motion on your camera and subscribe to your MQTT server and see if you see motion:
@@ -76,9 +52,3 @@ Create some motion on your camera and subscribe to your MQTT server and see if y
 root@pi3:~# mosquitto_sub -h 192.168.x.x -t "camera/motion/#" -v
 camera/motion/front_door on
 camera/motion/front_door off
-```
-
-Once all changes are done, go ahead and start the daemon
-```
-systemctl start unifi-video-mqtt
-```
